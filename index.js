@@ -120,43 +120,71 @@ client.once("ready", () => {
 });
 
 client.on("messageCreate", async (message) => {
-  // Ignore bot messages (except Ticket Tool)
-  if (message.author.bot && message.author.username !== "Ticket Tool") return;
+  // Debug: log ALL messages the bot sees
+  console.log(`📩 Message from: ${message.author.username} (bot: ${message.author.bot}) in #${message.channel.name || "unknown"} | parentId: ${message.channel.parentId}`);
 
   // Only process messages in Bank Requests category
   const channel = message.channel;
-  if (!channel.parentId || channel.parentId !== BANK_CATEGORY_ID) return;
+  if (!channel.parentId || channel.parentId !== BANK_CATEGORY_ID) {
+    return;
+  }
   if (!channel.name.startsWith("ticket-")) return;
 
+  console.log(`🎫 Message in ticket channel: ${channel.name}`);
+  console.log(`   Content: "${message.content}"`);
+  console.log(`   Embeds: ${message.embeds.length}`);
+  if (message.embeds.length > 0) {
+    message.embeds.forEach((e, i) => {
+      console.log(`   Embed ${i}: title="${e.title}" desc="${e.description}"`);
+    });
+  }
+
   // If it's Ticket Tool's welcome message, process the ticket
-  if (message.author.bot && message.author.username === "Ticket Tool") {
-    // Extract user mention from welcome message
-    // Format: "Welcome @Username [TornID],"
+  if (message.author.bot) {
+    // Extract user mention from all available text
     const content = message.content || "";
     const embedDescription = message.embeds?.[0]?.description || "";
     const fullText = content + " " + embedDescription;
 
+    console.log(`   Full text to parse: "${fullText}"`);
+
     // Find mentioned user
     const mentionMatch = fullText.match(/<@!?(\d+)>/);
-    if (!mentionMatch) return;
+    if (!mentionMatch) {
+      console.log(`   ❌ No user mention found`);
+      return;
+    }
 
     const discordUserId = mentionMatch[1];
+    console.log(`   ✅ Found user: ${discordUserId}`);
 
     // Mark this ticket as being watched
-    if (processedTickets.has(channel.id)) return;
+    if (processedTickets.has(channel.id)) {
+      console.log(`   ⏭️ Ticket already processed`);
+      return;
+    }
     processedTickets.add(channel.id);
 
-    console.log(`🎫 New ticket detected: ${channel.name} for user ${discordUserId}`);
+    // Extract the amount from the ticket message (usually in quotes in the embed)
+    // Format: "all my money ( it's a test )"
+    const amountMatch = fullText.match(/"([^"]+)"/);
+    if (amountMatch) {
+      console.log(`   💰 Found amount text: "${amountMatch[1]}"`);
+      // Process directly with the quoted text as the amount message
+      await processWithdrawal(channel, discordUserId, { content: amountMatch[1] });
+      return;
+    }
 
-    // Wait for the user's message with the amount (they usually send it right after)
-    // Listen for the next message from this user in this channel
+    console.log(`🎫 Waiting for user message in ${channel.name}...`);
+
+    // Wait for the user's message with the amount
     const filter = (msg) => msg.author.id === discordUserId && !msg.author.bot;
 
     try {
       const collected = await channel.awaitMessages({
         filter,
         max: 1,
-        time: 300000, // 5 minutes timeout
+        time: 300000,
       });
 
       const userMessage = collected.first();
@@ -176,11 +204,6 @@ client.on("messageCreate", async (message) => {
   // If it's a regular user message in a ticket we haven't processed yet
   if (!message.author.bot && !processedTickets.has(channel.id)) {
     processedTickets.add(channel.id);
-
-    // Try to get Torn ID from the user's nickname
-    const member = message.member;
-    if (!member) return;
-
     await processWithdrawal(channel, message.author.id, message);
   }
 });
