@@ -163,6 +163,18 @@ client.on("messageCreate", async (message) => {
       console.log(`   ⏭️ Ticket already processed`);
       return;
     }
+
+    // Check if someone else already replied in this ticket
+    const messages = await channel.messages.fetch({ limit: 10 });
+    const alreadyReplied = messages.some(
+      (msg) => !msg.author.bot && msg.author.id !== discordUserId
+    );
+    if (alreadyReplied) {
+      console.log(`   ⏭️ Someone already replied in ${channel.name}, skipping`);
+      processedTickets.add(channel.id);
+      return;
+    }
+
     processedTickets.add(channel.id);
 
     // Extract the amount from the ticket message (usually in quotes in the embed)
