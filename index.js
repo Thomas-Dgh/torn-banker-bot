@@ -201,6 +201,11 @@ client.on("messageCreate", async (message) => {
     return;
   }
 
+  // Ignore user messages in already processed tickets
+  if (!message.author.bot && processedTickets.has(channel.id)) {
+    return;
+  }
+
   // If it's a regular user message in a ticket we haven't processed yet
   if (!message.author.bot && !processedTickets.has(channel.id)) {
     processedTickets.add(channel.id);
