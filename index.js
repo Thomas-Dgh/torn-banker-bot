@@ -120,24 +120,19 @@ client.once("ready", () => {
 });
 
 client.on("messageCreate", async (message) => {
-  // Debug: log ALL messages the bot sees
-  console.log(`📩 Message from: ${message.author.username} (bot: ${message.author.bot}) in #${message.channel.name || "unknown"} | parentId: ${message.channel.parentId}`);
+  // Ignore our own messages
+  if (message.author.id === client.user.id) return;
 
   // Only process messages in Bank Requests category
   const channel = message.channel;
-  if (!channel.parentId || channel.parentId !== BANK_CATEGORY_ID) {
-    return;
-  }
+  if (!channel.parentId || channel.parentId !== BANK_CATEGORY_ID) return;
   if (!channel.name.startsWith("ticket-")) return;
 
-  console.log(`🎫 Message in ticket channel: ${channel.name}`);
-  console.log(`   Content: "${message.content}"`);
-  console.log(`   Embeds: ${message.embeds.length}`);
-  if (message.embeds.length > 0) {
-    message.embeds.forEach((e, i) => {
-      console.log(`   Embed ${i}: title="${e.title}" desc="${e.description}"`);
-    });
-  }
+  // Ignore old messages (only process messages from the last 30 seconds)
+  const messageAge = Date.now() - message.createdTimestamp;
+  if (messageAge > 30000) return;
+
+  console.log(`📩 Message in ${channel.name} from: ${message.author.username} (bot: ${message.author.bot})`);
 
   // If it's Ticket Tool's welcome message, process the ticket
   if (message.author.bot) {
