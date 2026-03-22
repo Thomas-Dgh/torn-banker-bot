@@ -120,7 +120,8 @@ client.once("ready", () => {
 });
 
 client.on("messageCreate", async (message) => {
-  // Ignore our own messages
+  // ONLY respond to Ticket Tool's welcome message, nothing else
+  if (!message.author.bot) return;
   if (message.author.id === client.user.id) return;
 
   // Only process messages in Bank Requests category
@@ -132,91 +133,31 @@ client.on("messageCreate", async (message) => {
   const messageAge = Date.now() - message.createdTimestamp;
   if (messageAge > 30000) return;
 
-  console.log(`📩 Message in ${channel.name} from: ${message.author.username} (bot: ${message.author.bot})`);
+  // Don't process same ticket twice
+  if (processedTickets.has(channel.id)) return;
 
-  // If it's Ticket Tool's welcome message, process the ticket
-  if (message.author.bot) {
-    // Extract user mention from all available text
-    const content = message.content || "";
-    const embedDescription = message.embeds?.[0]?.description || "";
-    const fullText = content + " " + embedDescription;
+  // Extract user mention from all available text
+  const content = message.content || "";
+  const embedDescription = message.embeds?.[0]?.description || "";
+  const fullText = content + " " + embedDescription;
 
-    console.log(`   Full text to parse: "${fullText}"`);
+  // Find mentioned user
+  const mentionMatch = fullText.match(/<@!?(\d+)>/);
+  if (!mentionMatch) return;
 
-    // Find mentioned user
-    const mentionMatch = fullText.match(/<@!?(\d+)>/);
-    if (!mentionMatch) {
-      console.log(`   ❌ No user mention found`);
-      return;
-    }
+  const discordUserId = mentionMatch[1];
+  processedTickets.add(channel.id);
 
-    const discordUserId = mentionMatch[1];
-    console.log(`   ✅ Found user: ${discordUserId}`);
+  console.log(`🎫 New ticket: ${channel.name} | User: ${discordUserId}`);
 
-    // Mark this ticket as being watched
-    if (processedTickets.has(channel.id)) {
-      console.log(`   ⏭️ Ticket already processed`);
-      return;
-    }
-
-    // Check if someone else already replied in this ticket
-    const messages = await channel.messages.fetch({ limit: 10 });
-    const alreadyReplied = messages.some(
-      (msg) => !msg.author.bot && msg.author.id !== discordUserId
-    );
-    if (alreadyReplied) {
-      console.log(`   ⏭️ Someone already replied in ${channel.name}, skipping`);
-      processedTickets.add(channel.id);
-      return;
-    }
-
-    processedTickets.add(channel.id);
-
-    // Extract the amount from the ticket message (usually in quotes in the embed)
-    // Format: "all my money ( it's a test )"
-    const amountMatch = fullText.match(/"([^"]+)"/);
-    if (amountMatch) {
-      console.log(`   💰 Found amount text: "${amountMatch[1]}"`);
-      // Process directly with the quoted text as the amount message
-      await processWithdrawal(channel, discordUserId, { content: amountMatch[1] });
-      return;
-    }
-
-    console.log(`🎫 Waiting for user message in ${channel.name}...`);
-
-    // Wait for the user's message with the amount
-    const filter = (msg) => msg.author.id === discordUserId && !msg.author.bot;
-
-    try {
-      const collected = await channel.awaitMessages({
-        filter,
-        max: 1,
-        time: 300000,
-      });
-
-      const userMessage = collected.first();
-      if (!userMessage) {
-        console.log(`⏰ Timeout waiting for amount in ${channel.name}`);
-        return;
-      }
-
-      await processWithdrawal(channel, discordUserId, userMessage);
-    } catch (error) {
-      console.error(`❌ Error waiting for message in ${channel.name}:`, error.message);
-    }
-
-    return;
-  }
-
-  // Ignore user messages in already processed tickets
-  if (!message.author.bot && processedTickets.has(channel.id)) {
-    return;
-  }
-
-  // If it's a regular user message in a ticket we haven't processed yet
-  if (!message.author.bot && !processedTickets.has(channel.id)) {
-    processedTickets.add(channel.id);
-    await processWithdrawal(channel, message.author.id, message);
+  // Extract the amount from the ticket message (usually in quotes)
+  const amountMatch = fullText.match(/"([^"]+)"/);
+  if (amountMatch) {
+    console.log(`   💰 Amount text: "${amountMatch[1]}"`);
+    await processWithdrawal(channel, discordUserId, { content: amountMatch[1] });
+  } else {
+    // No amount in the ticket message, just show balance
+    await processWithdrawal(channel, discordUserId, { content: "" });
   }
 });
 
