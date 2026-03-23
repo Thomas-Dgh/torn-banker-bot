@@ -74,6 +74,8 @@ Extract the withdrawal amount from the player's message. Rules:
 - "1.5m" = 1500000
 - "72,979,001" = 72979001
 - "all", "everything", "tout", "whole", "max", "the lot", "kit n kaboodle", "all of it" = ${balance} (full balance)
+- "50%" = ${Math.floor(balance * 0.5)}, "100%" = ${balance}, "25%" = ${Math.floor(balance * 0.25)} (calculate percentage of balance)
+- "half" = ${Math.floor(balance * 0.5)}
 - If unclear or no amount found, respond with 0
 Respond with ONLY the number, nothing else. No text, no dollar sign, no commas. Just the integer.`,
           },
