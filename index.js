@@ -188,6 +188,15 @@ client.on("messageCreate", async (message) => {
   const mentionMatch = fullText.match(/<@!?(\d+)>/);
   if (!mentionMatch) return;
 
+  // Double check: has our bot already posted in this channel?
+  const recentMessages = await channel.messages.fetch({ limit: 10 });
+  const alreadyPosted = recentMessages.some((msg) => msg.author.id === client.user.id);
+  if (alreadyPosted) {
+    processedTickets.add(channel.id);
+    saveProcessedTickets();
+    return;
+  }
+
   const discordUserId = mentionMatch[1];
   processedTickets.add(channel.id);
   saveProcessedTickets();
