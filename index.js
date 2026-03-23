@@ -169,9 +169,9 @@ client.on("messageCreate", async (message) => {
   if (!channel.parentId || channel.parentId !== BANK_CATEGORY_ID) return;
   if (!channel.name.startsWith("ticket-")) return;
 
-  // Ignore old messages (only process messages from the last 30 seconds)
+  // Ignore old messages (only process messages from the last 10 seconds)
   const messageAge = Date.now() - message.createdTimestamp;
-  if (messageAge > 30000) return;
+  if (messageAge > 10000) return;
 
   // Don't process same ticket twice
   if (processedTickets.has(channel.id)) return;
@@ -180,6 +180,9 @@ client.on("messageCreate", async (message) => {
   const content = message.content || "";
   const embedDescription = message.embeds?.[0]?.description || "";
   const fullText = content + " " + embedDescription;
+
+  // Only process the welcome message (must contain "Welcome")
+  if (!fullText.includes("Welcome")) return;
 
   // Find mentioned user
   const mentionMatch = fullText.match(/<@!?(\d+)>/);
