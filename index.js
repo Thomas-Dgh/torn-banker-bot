@@ -131,8 +131,28 @@ function formatMoney(amount) {
   return "$" + amount.toLocaleString("en-US");
 }
 
-// Track processed tickets to avoid duplicates
-const processedTickets = new Set();
+// Track processed tickets to avoid duplicates (persisted to file)
+const fs = require("fs");
+const PROCESSED_FILE = __dirname + "/processed-tickets.json";
+
+function loadProcessedTickets() {
+  try {
+    if (fs.existsSync(PROCESSED_FILE)) {
+      const data = JSON.parse(fs.readFileSync(PROCESSED_FILE, "utf8"));
+      return new Set(data);
+    }
+  } catch (e) {}
+  return new Set();
+}
+
+function saveProcessedTickets() {
+  try {
+    fs.writeFileSync(PROCESSED_FILE, JSON.stringify([...processedTickets]));
+  } catch (e) {}
+}
+
+const processedTickets = loadProcessedTickets();
+console.log(`📋 Loaded ${processedTickets.size} processed tickets from disk`);
 
 client.once("ready", () => {
   console.log(`✅ Banker Bot connected as ${client.user.tag}`);
@@ -167,6 +187,7 @@ client.on("messageCreate", async (message) => {
 
   const discordUserId = mentionMatch[1];
   processedTickets.add(channel.id);
+  saveProcessedTickets();
 
   console.log(`🎫 New ticket: ${channel.name} | User: ${discordUserId}`);
 
