@@ -160,14 +160,19 @@ client.once("ready", () => {
 });
 
 client.on("messageCreate", async (message) => {
-  // ONLY respond to Ticket Tool's welcome message, nothing else
-  if (!message.author.bot) return;
+  // Ignore own messages
   if (message.author.id === client.user.id) return;
+  // Only respond to bot messages (Ticket Tool)
+  if (!message.author.bot) return;
 
   // Only process messages in Bank Requests category
   const channel = message.channel;
   if (!channel.parentId || channel.parentId !== BANK_CATEGORY_ID) return;
   if (!channel.name.startsWith("ticket-")) return;
+
+  // HARD RULE: only 1 message per thread — check if we already posted
+  const recentMessages = await channel.messages.fetch({ limit: 20 });
+  if (recentMessages.some((msg) => msg.author.id === client.user.id)) return;
 
   // Ignore old messages (only process messages from the last 10 seconds)
   const messageAge = Date.now() - message.createdTimestamp;
@@ -187,15 +192,6 @@ client.on("messageCreate", async (message) => {
   // Find mentioned user
   const mentionMatch = fullText.match(/<@!?(\d+)>/);
   if (!mentionMatch) return;
-
-  // Double check: has our bot already posted in this channel?
-  const recentMessages = await channel.messages.fetch({ limit: 10 });
-  const alreadyPosted = recentMessages.some((msg) => msg.author.id === client.user.id);
-  if (alreadyPosted) {
-    processedTickets.add(channel.id);
-    saveProcessedTickets();
-    return;
-  }
 
   const discordUserId = mentionMatch[1];
   processedTickets.add(channel.id);
