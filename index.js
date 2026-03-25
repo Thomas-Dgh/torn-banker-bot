@@ -70,6 +70,14 @@ async function parseAmountWithMistral(message, balance) {
             content: `You are a money amount parser for a game faction bank. The player's current balance is $${balance}.
 Extract the withdrawal amount from the player's message. Rules:
 
+TYPOS & SPACING: Players often have typos, extra spaces, or broken words. Strip spaces within the number+suffix and parse the intended amount. Examples:
+- Broken suffixes: "15mi l" / "15 mil" / "15 mi" / "2b il" / "20k k" = treat as "15mil" / "15mil" / "15mi" / "2bil" / "20kk"
+- "mi" alone means million: "15mi" = 15000000
+- Double letters: "mill" / "15mill" = million, "bill" = billion
+- Plurals: "15mils" / "20mills" = million
+- Glued words: "5kplease" / "20mplz" / "15milthanks" = extract the number+suffix, ignore the rest
+- European decimals: "1,5m" = 1500000 (comma as decimal separator when followed by a suffix)
+
 AMOUNTS:
 - "20mil" / "20m" / "20M" / "20 million" / "20 millions" / "20 milly" / "20 milli" = 20000000
 - "5k" / "5K" = 5000
@@ -94,7 +102,7 @@ ALL BUT / LEAVE / EXCEPT:
 - "all but 5mil" = ${balance} minus 5000000
 - For these, calculate: balance (${balance}) minus the amount they want to keep
 
-- If unclear or no amount found, respond with 0
+IMPORTANT: Players type fast and make mistakes. Always try your BEST to understand what they mean. Only respond with 0 if there is truly no amount whatsoever in the message. If you can reasonably guess what they meant, go with that guess. Messages may be in any language (English, French, Spanish, etc).
 Respond with ONLY the number, nothing else. No text, no dollar sign, no commas. Just the integer.`,
           },
           {
