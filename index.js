@@ -178,6 +178,11 @@ client.on("messageCreate", async (message) => {
   if (!channel.parentId || channel.parentId !== BANK_CATEGORY_ID) return;
   if (!channel.name.startsWith("ticket-")) return;
 
+  // ATOMIC: Mark ticket as processed IMMEDIATELY to prevent race conditions
+  if (processedTickets.has(channel.id)) return;
+  processedTickets.add(channel.id);
+  saveProcessedTickets();
+
   // HARD RULE: only 1 message per thread — check if we already posted
   const recentMessages = await channel.messages.fetch({ limit: 20 });
   if (recentMessages.some((msg) => msg.author.id === client.user.id)) return;
@@ -185,9 +190,6 @@ client.on("messageCreate", async (message) => {
   // Ignore old messages (only process messages from the last 10 seconds)
   const messageAge = Date.now() - message.createdTimestamp;
   if (messageAge > 10000) return;
-
-  // Don't process same ticket twice
-  if (processedTickets.has(channel.id)) return;
 
   // Extract user mention from all available text
   const content = message.content || "";
@@ -202,8 +204,6 @@ client.on("messageCreate", async (message) => {
   if (!mentionMatch) return;
 
   const discordUserId = mentionMatch[1];
-  processedTickets.add(channel.id);
-  saveProcessedTickets();
 
   console.log(`🎫 New ticket: ${channel.name} | User: ${discordUserId}`);
 
