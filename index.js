@@ -178,14 +178,14 @@ client.on("messageCreate", async (message) => {
   if (!channel.parentId || channel.parentId !== BANK_CATEGORY_ID) return;
   if (!channel.name.startsWith("ticket-")) return;
 
-  // HARD RULE: only 1 message per thread — check if we already posted FIRST
-  const recentMessages = await channel.messages.fetch({ limit: 20 });
-  if (recentMessages.some((msg) => msg.author.id === client.user.id)) return;
-
-  // ATOMIC: Mark ticket as processed IMMEDIATELY to prevent race conditions
+  // ATOMIC: Mark ticket as processed IMMEDIATELY (before any async call)
   if (processedTickets.has(channel.id)) return;
   processedTickets.add(channel.id);
   saveProcessedTickets();
+
+  // DOUBLE CHECK: also verify via channel history that we haven't posted
+  const recentMessages = await channel.messages.fetch({ limit: 20 });
+  if (recentMessages.some((msg) => msg.author.id === client.user.id)) return;
 
   // Ignore old messages (only process messages from the last 10 seconds)
   const messageAge = Date.now() - message.createdTimestamp;
