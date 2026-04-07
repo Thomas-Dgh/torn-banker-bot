@@ -91,11 +91,12 @@ ALL / EVERYTHING:
 - "all" / "everything" / "tout" / "whole" / "max" / "the lot" / "the rest" / "all of it" = ${balance}
 - "empty it" / "clean it out" / "drain it" / "what's left" / "whatever I have" / "as much as possible" = ${balance}
 
-PERCENTAGES:
+PERCENTAGES (only when the % symbol is explicitly present, or words like "half", "third", "quarter"):
 - "50%" = ${Math.floor(balance * 0.5)}, "100%" = ${balance}, "25%" = ${Math.floor(balance * 0.25)}
 - "half" / "a half" / "1/2" = ${Math.floor(balance * 0.5)}
 - "a third" / "1/3" = ${Math.floor(balance / 3)}
 - "a quarter" / "1/4" / "3/4" = calculate from balance
+- IMPORTANT: "50m" / "50M" / "50mil" is NEVER a percentage — it is always 50000000
 
 ALL BUT / LEAVE / EXCEPT:
 - "all but 10m" / "everything except 10m" / "leave 10m" / "keep 10m" = ${balance} minus 10000000
