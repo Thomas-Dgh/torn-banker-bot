@@ -87,9 +87,10 @@ AMOUNTS:
 - "72,979,001" / "72.979.001" / "72 979 001" / "$72,979,001" = 72979001
 - "around 20m" / "about 20m" / "roughly 20m" = 20000000 (ignore approximation words)
 
-ALL / EVERYTHING:
-- "all" / "everything" / "tout" / "whole" / "max" / "the lot" / "the rest" / "all of it" = ${balance}
+ALL / EVERYTHING (case-insensitive, ignore words like "plz", "please", "thanks", "ty", "thx" around it):
+- "all" / "All" / "ALL" / "everything" / "tout" / "whole" / "max" / "the lot" / "the rest" / "all of it" = ${balance}
 - "empty it" / "clean it out" / "drain it" / "what's left" / "whatever I have" / "as much as possible" = ${balance}
+- "all plz" / "all please" / "all thanks" / "all ty" / "all pls" = ${balance}
 
 PERCENTAGES (only when the % symbol is explicitly present, or words like "half", "third", "quarter"):
 - "50%" = ${Math.floor(balance * 0.5)}, "100%" = ${balance}, "25%" = ${Math.floor(balance * 0.25)}
